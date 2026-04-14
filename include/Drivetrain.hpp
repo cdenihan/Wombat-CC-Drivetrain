@@ -98,7 +98,7 @@ public:
     void CenterOnLine(int speed);
 
     // Destructor
-    ~DriveTrain();
+    ~Drivetrain();
 };
 
 #endif // WOMBAT_CC_Drivetrain_HPP
