@@ -1,48 +1,162 @@
-# Wombat-CC C++ Library Template
+# Wombat-CC Drivetrain Library
 
-Minimal C++ library template for Wombat-CC projects.
+Drivetrain is a C++ helper for a 4-motor holonomic/mecanum-style base on KIPR Wombat.
 
-## Remote usage
+It provides:
 
-```sh
-zig fetch --save=wombat_cc_lib_cpp_template https://github.com/cdenihan/Wombat-CC-CPP-Library-Template/archive/refs/heads/master.tar.gz
-zig build
+- Encoder-based drive, strafe, rotate, and diagonal movement
+- Line tracking and line acquisition helpers
+- Optional debug logging
+
+## Add To A Project
+
+Use this dependency key in your consumer `build.zig.zon`:
+
+```zig
+.dependencies = .{
+    .wombat_cc_lib_drivetrain = .{ .path = "../Wombat-CC-Drivetrain/" },
+};
 ```
 
-## Structure
-
-- `build.zig` exports artifact `lib` and named lazy path `include`
-- `include/` + `src/` provide your C++ API and implementation
-
-## Adapting for your library
-
-1. Rename package in `build.zig.zon`
-2. Rename `LibraryTemplate.hpp/.cpp` and replace API
-3. Keep artifact name `lib` for root auto-linker compatibility
-
-## Consumer examples
-
-### C / C++
+Then include the header:
 
 ```cpp
-#include <LibraryTemplate.hpp>
+#include <Drivetrain.hpp>
+```
 
-int main() {
-    const int sum = LibraryTemplate::Add(2, 3);
-    (void)sum;
+## Motor Layout And Constructor
+
+Constructor:
+
+```cpp
+Drivetrain(
+    int FL, int FR, int RL, int RR,
+    int FL_IR_PORT, int FR_IR_PORT
+)
+```
+
+Port meaning:
+
+- `FL`: front-left motor
+- `FR`: front-right motor
+- `RL`: rear-left motor
+- `RR`: rear-right motor
+- `FL_IR_PORT`: front-left line sensor analog port
+- `FR_IR_PORT`: front-right line sensor analog port
+
+## Quick Start
+
+```cpp
+#include <Drivetrain.hpp>
+
+int main()
+{
+    Drivetrain drivetrain(0, 1, 2, 3, 0, 1);
+
+    drivetrain.SetDebugEnabled(true);
+
+    drivetrain.SetPerformance(1.0, 1.0, 1.0, 1.0);
+    drivetrain.SetLineTrackingThresholds(200, 200, 3600, 3600);
+
+    drivetrain.DriveByEncoder.Forward(300, 800);
+    drivetrain.StrafeByEncoder.Right(300, 800);
+    drivetrain.Rotate.Right(200, 700);
+    drivetrain.DriveLineTracking.Forward(1000, 700);
+    drivetrain.Line.Square(500);
+
     return 0;
 }
 ```
 
-### Zig
+## Recommended Initialization Order
 
-Zig cannot directly use C++ classes. Add a C ABI shim in your library (for example `library_template_c_api.h/.cpp`) and call it via `@cImport`:
+1. Construct drivetrain with motor and sensor ports.
+2. Call `SetPerformance(...)` to tune per-motor multipliers.
+3. Call `SetLineTrackingThresholds(...)` before any line-based movement.
 
-```zig
-const lib = @cImport(@cInclude("library_template_c_api.h"));
+## API Overview
 
-pub fn main() void {
-    const sum = lib.library_template_add(2, 3);
-    _ = sum;
-}
-```
+Movement is grouped by domain for discoverability and future expansion.
+
+### Configuration
+
+- `void SetPerformance(double FLP, double FRP, double RLP, double RRP)`
+- `void SetLineTrackingThresholds(int FL_white, int FR_white, int FL_black, int FR_black)`
+- `void SetDebugEnabled(bool enabled)`
+- `bool IsDebugEnabled() const`
+
+### DriveByEncoder Group
+
+- `drivetrain.DriveByEncoder.Forward(int ticks, int speed)`
+- `drivetrain.DriveByEncoder.Backward(int ticks, int speed)`
+
+### DriveLineTracking Group
+
+- `drivetrain.DriveLineTracking.Forward(int ticks, int speed)`
+- `drivetrain.DriveLineTracking.Backward(int ticks, int speed)`
+- `drivetrain.DriveLineTracking.ForwardToLine(int speed)`
+- `drivetrain.DriveLineTracking.BackwardToLine(int speed)`
+
+### StrafeByEncoder Group
+
+- `drivetrain.StrafeByEncoder.Left(int ticks, int speed)`
+- `drivetrain.StrafeByEncoder.Right(int ticks, int speed)`
+
+### StrafeLineTracking Group
+
+- `drivetrain.StrafeLineTracking.Left(int ticks, int speed)`
+- `drivetrain.StrafeLineTracking.Right(int ticks, int speed)`
+- `drivetrain.StrafeLineTracking.LeftToLine(int speed)`
+- `drivetrain.StrafeLineTracking.RightToLine(int speed)`
+- `drivetrain.StrafeLineTracking.LeftOnToLine(int speed)`
+- `drivetrain.StrafeLineTracking.RightOnToLine(int speed)`
+
+### Rotate Group
+
+- `drivetrain.Rotate.Left(int ticks, int speed)`
+- `drivetrain.Rotate.Right(int ticks, int speed)`
+
+### Diagonal Group
+
+- `drivetrain.Diagonal.ForwardLeft(int ticks, int speed)`
+- `drivetrain.Diagonal.ForwardRight(int ticks, int speed)`
+- `drivetrain.Diagonal.BackwardLeft(int ticks, int speed)`
+- `drivetrain.Diagonal.BackwardRight(int ticks, int speed)`
+
+### Line Group
+
+- `drivetrain.Line.Square(int speed)`
+- `drivetrain.Line.Center(int speed)`
+
+### Legacy Note
+
+The old flat movement API has been removed in favor of the grouped API above.
+
+## Direction Conventions
+
+- Drive: positive speed is forward.
+- Strafe: positive speed is right.
+- Rotate: positive speed is clockwise.
+- Diagonal wrappers handle sign combinations internally.
+
+## Debug Logging
+
+Two options are supported:
+
+- Runtime toggle in code with `SetDebugEnabled(true)`
+- Environment variable before program start: `WOMBAT_CC_DEBUG=1`
+
+Truthy values currently recognized:
+
+- `1`
+- `true`
+- `TRUE`
+- `on`
+- `ON`
+
+## Practical Notes
+
+- Line threshold values are computed internally as midpoint between white and black readings.
+- Performance multipliers help compensate for uneven motors or drivetrain friction.
+- Some encoder-based primitives use one reference encoder for completion checks, so per-motor performance tuning is important for straightness.
+- Backward line tracking is available, but forward line tracking generally gives more stable results.

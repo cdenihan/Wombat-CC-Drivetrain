@@ -9,96 +9,190 @@
 
 class Drivetrain
 {
+public:
+    class DriveByEncoderController
+    {
+    public:
+        explicit DriveByEncoderController(Drivetrain &parent);
+
+        void Forward(int ticks, int speed);
+        void Backward(int ticks, int speed);
+
+    private:
+        Drivetrain &Parent;
+    };
+
+    class DriveLineTrackingController
+    {
+    public:
+        explicit DriveLineTrackingController(Drivetrain &parent);
+
+        void Forward(int ticks, int speed);
+        void Backward(int ticks, int speed);
+        void ForwardToLine(int speed);
+        void BackwardToLine(int speed);
+
+    private:
+        Drivetrain &Parent;
+    };
+
+    class StrafeByEncoderController
+    {
+    public:
+        explicit StrafeByEncoderController(Drivetrain &parent);
+
+        void Left(int ticks, int speed);
+        void Right(int ticks, int speed);
+
+    private:
+        Drivetrain &Parent;
+    };
+
+    class StrafeLineTrackingController
+    {
+    public:
+        explicit StrafeLineTrackingController(Drivetrain &parent);
+
+        void Left(int ticks, int speed);
+        void Right(int ticks, int speed);
+        void LeftToLine(int speed);
+        void RightToLine(int speed);
+        void LeftOnToLine(int speed);
+        void RightOnToLine(int speed);
+
+    private:
+        Drivetrain &Parent;
+    };
+
+    class RotateController
+    {
+    public:
+        explicit RotateController(Drivetrain &parent);
+
+        void Left(int ticks, int speed);
+        void Right(int ticks, int speed);
+
+    private:
+        Drivetrain &Parent;
+    };
+
+    class DiagonalController
+    {
+    public:
+        explicit DiagonalController(Drivetrain &parent);
+
+        void ForwardLeft(int ticks, int speed);
+        void ForwardRight(int ticks, int speed);
+        void BackwardLeft(int ticks, int speed);
+        void BackwardRight(int ticks, int speed);
+
+    private:
+        Drivetrain &Parent;
+    };
+
+    class LineController
+    {
+    public:
+        explicit LineController(Drivetrain &parent);
+
+        void Square(int speed);
+        void Center(int speed);
+
+    private:
+        Drivetrain &Parent;
+    };
+
+    Drivetrain(int front_left_motor_port, int front_right_motor_port,
+               int rear_left_motor_port, int rear_right_motor_port,
+               int front_left_line_sensor_port,
+               int front_right_line_sensor_port);
+
+    void SetDebugEnabled(bool enabled);
+    bool IsDebugEnabled() const;
+    void SetLineTrackingThresholds(int front_left_white,
+                                   int front_right_white,
+                                   int front_left_black,
+                                   int front_right_black);
+    void SetPerformance(double front_left_performance,
+                        double front_right_performance,
+                        double rear_left_performance,
+                        double rear_right_performance);
+
+    ~Drivetrain();
+
 private:
-    // Motor port definitions
-    // Defined like how grid quadrants are
-    // FL (Front Left), FR (Front Right), RL (Rear Left), RR (Rear Right)
-    const int FL; // Front Left
-    const int FR; // Front Right
-    const int RL; // Rear Left
-    const int RR; // Rear Right
+    // Motor ports (FL, FR, RL, RR)
+    const int FrontLeftMotorPort;
+    const int FrontRightMotorPort;
+    const int RearLeftMotorPort;
+    const int RearRightMotorPort;
 
-    // Arrays to store motors
-    const int AM[4];    // All Motors
-    const int FL_RR[2]; // Front Left and Rear Right
-    const int FR_RL[2]; // Front Right and Rear Left
-    const int FM[2];    // Front Motors
-    const int RM[2];    // Rear Motors
-    const int LSM[2];   // Left Side Motors
-    const int RSM[2];   // Right Side Motors
+    // Useful motor groupings
+    const std::array<int, 4> AllMotorPorts;
+    const std::array<int, 2> FrontLeftRearRightMotors;
+    const std::array<int, 2> FrontRightRearLeftMotors;
+    const std::array<int, 2> LeftSideMotors;
+    const std::array<int, 2> RightSideMotors;
 
-    // Per motor performance ratings (1.0f = nominal)
-    double FLP;   // Front Left Performance Rating
-    double FRP;   // Front Right Performance Rating
-    double RLP;   // Rear Left Performance Rating
-    double RRP;   // Rear Right Performance Rating
-    double PM[4]; // Performance Ratings Array
+    // Per-motor performance multipliers
+    double FrontLeftPerformance;
+    double FrontRightPerformance;
+    double RearLeftPerformance;
+    double RearRightPerformance;
+    std::array<double, 4> PerformanceMultipliers;
 
-    // Wheel information
-    double TPR; // Ticks per Revolution
+    // Line sensor ports and thresholds
+    const int FrontLeftLineSensorPort;
+    const int FrontRightLineSensorPort;
+    int FrontLeftThreshold;
+    int FrontRightThreshold;
+    int FrontLeftWhiteReading;
+    int FrontRightWhiteReading;
+    int FrontLeftBlackReading;
+    int FrontRightBlackReading;
 
-    // Line tracking thresholds
-    const int FL_IR_PORT; // Front Left IR Sensor Port
-    const int FR_IR_PORT; // Front Right IR Sensor Port
+    bool DebugEnabled;
 
-    const int FL_THRESHOLD; // Front Left IR Sensor Threshold
-    const int FR_THRESHOLD; // Front Right IR Sensor Threshold
-    int FL_WHITE_READING;   // Front Left IR Sensor White Reading
-    int FR_WHITE_READING;   // Front Right IR Sensor White Reading
-    int FL_BLACK_READING;   // Front Left IR Sensor Black Reading
-    int FR_BLACK_READING;   // Front Right IR Sensor Black Reading
+    // Internal motion helpers
+    void MoveDriveTicks(int ticks, int speed);
+    void MoveDriveTicksLineTracking(int ticks, int speed);
+    void MoveDriveUntilLine(int speed);
+    void MoveStrafeTicks(int ticks, int speed);
+    void MoveStrafeTicksLineTracking(int ticks, int speed);
+    void MoveStrafeUntilLine(int speed);
+    void MoveStrafeUntilBothSensorsSeeLine(int speed);
+    void MoveDiagonalTicks(int ticks, int speed);
+    void MoveRotateTicks(int ticks, int speed);
+    void MoveSquareWithLine(int speed);
+    void MoveCenterOnLine(int speed);
 
-    // "Action" functions that define how to do something
-    // The goal of these functions is to reduce code duplication
-    void CAMPC(); // Clear all motor position counters
-    void WaitForTicksAndStop(int target_ticks, int port);
-    void WaitForTicksAndStop(int target_ticks, std::array<bool, 4> active_motors);
-
-    void Drive(int ticks, int speed);
-    void DriveLineTracking(int ticks, int speed);
-    void DriveToLine(int speed);
-    void StrafeToLine(int speed);
-    void StrafeOnToLine(int speed);
-    void Strafe(int ticks, int speed);
-    void Diagonal(int ticks, int speed);
-    void Rotate(int ticks, int speed);
+    // Internal utility helpers
+    void LogDebug(const char *message) const;
+    void LogCommand(const char *command, int speed) const;
+    void LogCommand(const char *command, int ticks, int speed) const;
+    void RefreshPerformanceMultipliers();
+    void ReadLineSensorState(bool &on_line_fl, bool &on_line_fr) const;
+    void SetAllMotorVelocitiesScaled(int speed);
+    void SetMotorPairVelocityRaw(const std::array<int, 2> &motors, int speed);
+    void ApplyLineTrackingCorrection(int speed, bool on_line_fl,
+                                     bool on_line_fr,
+                                     bool reverse_when_both_on_line);
+    void StepUntilLineIntersections(int speed, int step_ticks,
+                                    bool use_strafe_motion);
+    void ResetMotorPositionCounters();
+    void WaitForTicksThenStopAll(int target_ticks, int reference_motor_index);
+    void WaitForTicksThenStopActive(int target_ticks,
+                                    std::array<bool, 4> active_motors);
 
 public:
-    // Initalizer functions
-    Drivetrain(int FL, int FR, int RL, int RR, int FL_IR_PORT, int FR_IR_PORT);
-    void SetLineTrackingThresholds(int FL_white, int FR_white, int FL_black,
-                                   int FR_black);
-    void SetPerformance(double FLP, double FRP, double RLP, double RRP);
-
-    // Drive Functions (Encoder)
-    void DriveForward(int ticks, int speed);
-    void DriveBackward(int ticks, int speed);
-    void StrafeLeft(int ticks, int speed);
-    void StrafeRight(int ticks, int speed);
-    void DriveDiagonalForwardLeft(int ticks, int speed);
-    void DriveDiagonalForwardRight(int ticks, int speed);
-    void DriveDiagonalBackwardLeft(int ticks, int speed);
-    void DriveDiagonalBackwardRight(int ticks, int speed);
-
-    // Drive Functions (Line Tracking)
-    void DriveForwardLineTracking(int ticks, int speed);
-    void DriveBackwardLineTracking(int ticks, int speed);
-    void StrafeLeftToLine(int speed);
-    void StrafeRightToLine(int speed);
-    void StrafeLeftOnToLine(int speed);
-    void StrafeRightOnToLine(int speed);
-    void DriveForwardToLine(int speed);
-    void DriveBackwardToLine(int speed);
-
-    // Rotation Functions
-    void RotateLeft(int ticks, int speed);
-    void RotateRight(int ticks, int speed);
-
-    void SquareWithLine(int speed);
-    void CenterOnLine(int speed);
-
-    // Destructor
-    ~Drivetrain();
+    // Grouped API entry points.
+    DriveByEncoderController DriveByEncoder;
+    DriveLineTrackingController DriveLineTracking;
+    StrafeByEncoderController StrafeByEncoder;
+    StrafeLineTrackingController StrafeLineTracking;
+    RotateController Rotate;
+    DiagonalController Diagonal;
+    LineController Line;
 };
 
 #endif // WOMBAT_CC_Drivetrain_HPP
