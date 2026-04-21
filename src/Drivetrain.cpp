@@ -277,8 +277,9 @@ void Drivetrain::MoveDriveTicks(int ticks, int speed)
 
     ResetMotorPositionCounters();
     const int target_ticks = std::abs(ticks);
+    const int drive_speed = -speed;
 
-    SetAllMotorVelocitiesScaled(speed);
+    SetAllMotorVelocitiesScaled(drive_speed);
     WaitForTicksThenStopAll(target_ticks, 0);
     ResetMotorPositionCounters();
 }
@@ -289,6 +290,7 @@ void Drivetrain::MoveDriveTicksLineTracking(int ticks, int speed)
 
     ResetMotorPositionCounters();
     const int target_ticks = std::abs(ticks);
+    const int drive_speed = -speed;
 
     while (std::abs(gmpc(AllMotorPorts[0])) < target_ticks)
     {
@@ -298,20 +300,20 @@ void Drivetrain::MoveDriveTicksLineTracking(int ticks, int speed)
 
         if (on_line_fl && !on_line_fr)
         {
-            mav(AllMotorPorts[0], static_cast<int>(speed * PerformanceMultipliers[0] *
+            mav(AllMotorPorts[0], static_cast<int>(drive_speed * PerformanceMultipliers[0] *
                                                    kTrackedSideSpeedPercentage));
-            mav(AllMotorPorts[1], static_cast<int>(speed * PerformanceMultipliers[1]));
-            mav(AllMotorPorts[2], static_cast<int>(speed * PerformanceMultipliers[2] *
+            mav(AllMotorPorts[1], static_cast<int>(drive_speed * PerformanceMultipliers[1]));
+            mav(AllMotorPorts[2], static_cast<int>(drive_speed * PerformanceMultipliers[2] *
                                                    kTrackedSideSpeedPercentage));
-            mav(AllMotorPorts[3], static_cast<int>(speed * PerformanceMultipliers[3]));
+            mav(AllMotorPorts[3], static_cast<int>(drive_speed * PerformanceMultipliers[3]));
         }
         else if (!on_line_fl && on_line_fr)
         {
-            mav(AllMotorPorts[0], static_cast<int>(speed * PerformanceMultipliers[0]));
-            mav(AllMotorPorts[1], static_cast<int>(speed * PerformanceMultipliers[1] *
+            mav(AllMotorPorts[0], static_cast<int>(drive_speed * PerformanceMultipliers[0]));
+            mav(AllMotorPorts[1], static_cast<int>(drive_speed * PerformanceMultipliers[1] *
                                                    kTrackedSideSpeedPercentage));
-            mav(AllMotorPorts[2], static_cast<int>(speed * PerformanceMultipliers[2]));
-            mav(AllMotorPorts[3], static_cast<int>(speed * PerformanceMultipliers[3] *
+            mav(AllMotorPorts[2], static_cast<int>(drive_speed * PerformanceMultipliers[2]));
+            mav(AllMotorPorts[3], static_cast<int>(drive_speed * PerformanceMultipliers[3] *
                                                    kTrackedSideSpeedPercentage));
         }
 
@@ -325,7 +327,7 @@ void Drivetrain::MoveDriveTicksLineTracking(int ticks, int speed)
 void Drivetrain::MoveDriveUntilLine(int speed)
 {
     LogCommand("MoveDriveUntilLine", speed);
-    StepUntilLineIntersections(speed, kDriveToLineStepTicks,
+    StepUntilLineIntersections(-speed, kDriveToLineStepTicks,
                                /*use_strafe_motion=*/false);
 }
 
@@ -335,16 +337,17 @@ void Drivetrain::MoveStrafeTicks(int ticks, int speed)
 
     ResetMotorPositionCounters();
     const int target_ticks = std::abs(ticks);
+    const int strafe_speed = -speed;
 
     mav(FrontLeftRearRightMotors[0],
-        static_cast<int>(speed * FrontLeftPerformance));
+        static_cast<int>(strafe_speed * FrontLeftPerformance));
     mav(FrontLeftRearRightMotors[1],
-        static_cast<int>(speed * RearRightPerformance));
+        static_cast<int>(strafe_speed * RearRightPerformance));
 
     mav(FrontRightRearLeftMotors[0],
-        static_cast<int>(-speed * FrontRightPerformance));
+        static_cast<int>(-strafe_speed * FrontRightPerformance));
     mav(FrontRightRearLeftMotors[1],
-        static_cast<int>(-speed * RearLeftPerformance));
+        static_cast<int>(-strafe_speed * RearLeftPerformance));
 
     WaitForTicksThenStopAll(target_ticks, 0);
     ResetMotorPositionCounters();
@@ -356,6 +359,7 @@ void Drivetrain::MoveStrafeTicksLineTracking(int ticks, int speed)
 
     ResetMotorPositionCounters();
     const int target_ticks = std::abs(ticks);
+    const int strafe_speed = -speed;
 
     while (std::abs(gmpc(AllMotorPorts[0])) < target_ticks)
     {
@@ -380,13 +384,13 @@ void Drivetrain::MoveStrafeTicksLineTracking(int ticks, int speed)
         }
 
         mav(FrontLeftMotorPort,
-            static_cast<int>(speed * PerformanceMultipliers[0] * fl_scale));
+            static_cast<int>(strafe_speed * PerformanceMultipliers[0] * fl_scale));
         mav(FrontRightMotorPort,
-            static_cast<int>(-speed * PerformanceMultipliers[1] * fr_scale));
+            static_cast<int>(-strafe_speed * PerformanceMultipliers[1] * fr_scale));
         mav(RearLeftMotorPort,
-            static_cast<int>(-speed * PerformanceMultipliers[2] * rl_scale));
+            static_cast<int>(-strafe_speed * PerformanceMultipliers[2] * rl_scale));
         mav(RearRightMotorPort,
-            static_cast<int>(speed * PerformanceMultipliers[3] * rr_scale));
+            static_cast<int>(strafe_speed * PerformanceMultipliers[3] * rr_scale));
 
         msleep(kControlLoopDelayMs);
     }
