@@ -38,6 +38,9 @@ Then configure line-tracking IR ports separately:
 
 ```cpp
 drivetrain.ConfigureLineTrackingSensors(int FL_IR_PORT, int FR_IR_PORT);
+// OR
+drivetrain.ConfigureLineTrackingSensors(
+    int FL_IR_PORT, int FR_IR_PORT, int RR_IR_PORT, int RL_IR_PORT);
 ```
 
 Port meaning:
@@ -51,6 +54,8 @@ Line sensor meaning:
 
 - `FL_IR_PORT`: front-left line sensor analog port
 - `FR_IR_PORT`: front-right line sensor analog port
+- `RR_IR_PORT`: rear-right line sensor analog port
+- `RL_IR_PORT`: rear-left line sensor analog port
 
 ## Quick Start
 
@@ -92,7 +97,9 @@ Movement is grouped by domain for discoverability and future expansion.
 
 - `void SetPerformance(double FLP, double FRP, double RLP, double RRP)`
 - `void ConfigureLineTrackingSensors(int FL_IR_PORT, int FR_IR_PORT)`
+- `void ConfigureLineTrackingSensors(int FL_IR_PORT, int FR_IR_PORT, int RR_IR_PORT, int RL_IR_PORT)`
 - `void SetLineTrackingThresholds(int FL_white, int FR_white, int FL_black, int FR_black)`
+- `void SetLineTrackingThresholds(int FL_white, int FR_white, int RR_white, int RL_white, int FL_black, int FR_black, int RR_black, int RL_black)`
 - `void SetDebugEnabled(bool enabled)`
 - `bool IsDebugEnabled() const`
 - `bool IsLineTrackingConfigured() const`

@@ -309,6 +309,18 @@ public:
                                       int front_right_line_sensor_port);
 
     /**
+     * @brief Configure analog ports for four-sensor line tracking.
+     * @param front_left_line_sensor_port Front-left line sensor analog port.
+     * @param front_right_line_sensor_port Front-right line sensor analog port.
+     * @param rear_right_line_sensor_port Rear-right line sensor analog port.
+     * @param rear_left_line_sensor_port Rear-left line sensor analog port.
+     */
+    void ConfigureLineTrackingSensors(int front_left_line_sensor_port,
+                                      int front_right_line_sensor_port,
+                                      int rear_right_line_sensor_port,
+                                      int rear_left_line_sensor_port);
+
+    /**
      * @brief Query whether line tracking is fully configured.
      * @return True when sensor ports and thresholds are configured.
      */
@@ -337,6 +349,26 @@ public:
                                    int front_right_white,
                                    int front_left_black,
                                    int front_right_black);
+
+    /**
+     * @brief Configure white/black calibration values for four line sensors.
+     * @param front_left_white Front-left white-surface reading.
+     * @param front_right_white Front-right white-surface reading.
+     * @param rear_right_white Rear-right white-surface reading.
+     * @param rear_left_white Rear-left white-surface reading.
+     * @param front_left_black Front-left black-line reading.
+     * @param front_right_black Front-right black-line reading.
+     * @param rear_right_black Rear-right black-line reading.
+     * @param rear_left_black Rear-left black-line reading.
+     */
+    void SetLineTrackingThresholds(int front_left_white,
+                                   int front_right_white,
+                                   int rear_right_white,
+                                   int rear_left_white,
+                                   int front_left_black,
+                                   int front_right_black,
+                                   int rear_right_black,
+                                   int rear_left_black);
 
     /**
      * @brief Configure per-motor performance multipliers.
@@ -389,18 +421,40 @@ private:
     int FrontLeftLineSensorPort;
     /** @brief Front-right line sensor analog port. */
     int FrontRightLineSensorPort;
+    /** @brief Rear-right line sensor analog port. */
+    int RearRightLineSensorPort;
+    /** @brief Rear-left line sensor analog port. */
+    int RearLeftLineSensorPort;
     /** @brief Front-left line threshold. */
     int FrontLeftThreshold;
     /** @brief Front-right line threshold. */
     int FrontRightThreshold;
+    /** @brief Rear-right line threshold. */
+    int RearRightThreshold;
+    /** @brief Rear-left line threshold. */
+    int RearLeftThreshold;
     /** @brief Front-left calibrated white reading. */
     int FrontLeftWhiteReading;
     /** @brief Front-right calibrated white reading. */
     int FrontRightWhiteReading;
+    /** @brief Rear-right calibrated white reading. */
+    int RearRightWhiteReading;
+    /** @brief Rear-left calibrated white reading. */
+    int RearLeftWhiteReading;
     /** @brief Front-left calibrated black reading. */
     int FrontLeftBlackReading;
     /** @brief Front-right calibrated black reading. */
     int FrontRightBlackReading;
+    /** @brief Rear-right calibrated black reading. */
+    int RearRightBlackReading;
+    /** @brief Rear-left calibrated black reading. */
+    int RearLeftBlackReading;
+    /** @brief True when four line sensors are configured. */
+    bool UsesFourLineSensors;
+    /** @brief Number of configured line sensor ports (2 or 4). */
+    int ConfiguredLineSensorCount;
+    /** @brief Number of calibrated line sensor thresholds (2 or 4). */
+    int ThresholdLineSensorCount;
     /** @brief True once sensor ports are configured. */
     bool LineSensorsConfigured;
     /** @brief True once line thresholds are configured. */
@@ -518,6 +572,14 @@ private:
      * @param on_line_fr Output front-right on-line state.
      */
     void ReadLineSensorState(bool &on_line_fl, bool &on_line_fr) const;
+
+    /**
+     * @brief Read side-level line states for left and right halves.
+     * @param on_line_left Output left-side on-line state.
+     * @param on_line_right Output right-side on-line state.
+     */
+    void ReadLineSensorStateBySide(bool &on_line_left,
+                                   bool &on_line_right) const;
 
     /**
      * @brief Apply the same signed speed to all motors using multipliers.

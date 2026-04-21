@@ -199,9 +199,14 @@ Drivetrain::Drivetrain(int front_left_motor_port, int front_right_motor_port,
       PerformanceMultipliers{1.00, 1.00, 1.00, 1.00},
       FrontLeftLineSensorPort(-1),
       FrontRightLineSensorPort(-1),
-      FrontLeftThreshold(0), FrontRightThreshold(0), FrontLeftWhiteReading(0),
-      FrontRightWhiteReading(0), FrontLeftBlackReading(0),
-      FrontRightBlackReading(0),
+      RearRightLineSensorPort(-1), RearLeftLineSensorPort(-1),
+      FrontLeftThreshold(0), FrontRightThreshold(0),
+      RearRightThreshold(0), RearLeftThreshold(0), FrontLeftWhiteReading(0),
+      FrontRightWhiteReading(0), RearRightWhiteReading(0),
+      RearLeftWhiteReading(0), FrontLeftBlackReading(0),
+      FrontRightBlackReading(0), RearRightBlackReading(0),
+      RearLeftBlackReading(0), UsesFourLineSensors(false),
+      ConfiguredLineSensorCount(0), ThresholdLineSensorCount(0),
       LineSensorsConfigured(false), LineTrackingThresholdsConfigured(false),
       DebugEnabled(IsDebugEnabledFromEnvironment()),
       DriveByEncoder(*this), DriveLineTracking(*this),
@@ -222,6 +227,10 @@ void Drivetrain::ConfigureLineTrackingSensors(int front_left_line_sensor_port,
 {
     FrontLeftLineSensorPort = front_left_line_sensor_port;
     FrontRightLineSensorPort = front_right_line_sensor_port;
+    RearRightLineSensorPort = -1;
+    RearLeftLineSensorPort = -1;
+    UsesFourLineSensors = false;
+    ConfiguredLineSensorCount = 2;
     LineSensorsConfigured = true;
 
     if (DebugEnabled)
@@ -232,9 +241,33 @@ void Drivetrain::ConfigureLineTrackingSensors(int front_left_line_sensor_port,
     }
 }
 
+void Drivetrain::ConfigureLineTrackingSensors(int front_left_line_sensor_port,
+                                              int front_right_line_sensor_port,
+                                              int rear_right_line_sensor_port,
+                                              int rear_left_line_sensor_port)
+{
+    FrontLeftLineSensorPort = front_left_line_sensor_port;
+    FrontRightLineSensorPort = front_right_line_sensor_port;
+    RearRightLineSensorPort = rear_right_line_sensor_port;
+    RearLeftLineSensorPort = rear_left_line_sensor_port;
+    UsesFourLineSensors = true;
+    ConfiguredLineSensorCount = 4;
+    LineSensorsConfigured = true;
+
+    if (DebugEnabled)
+    {
+        std::cout << "[DRIVETRAIN][DEBUG] ConfigureLineTrackingSensors fl_port="
+                  << FrontLeftLineSensorPort << " fr_port="
+                  << FrontRightLineSensorPort << " rr_port="
+                  << RearRightLineSensorPort << " rl_port="
+                  << RearLeftLineSensorPort << std::endl;
+    }
+}
+
 bool Drivetrain::IsLineTrackingConfigured() const
 {
-    return LineSensorsConfigured && LineTrackingThresholdsConfigured;
+    return LineSensorsConfigured && LineTrackingThresholdsConfigured &&
+           ConfiguredLineSensorCount == ThresholdLineSensorCount;
 }
 
 void Drivetrain::SetDebugEnabled(bool enabled)
@@ -256,9 +289,16 @@ void Drivetrain::SetLineTrackingThresholds(int front_left_white,
     FrontRightWhiteReading = front_right_white;
     FrontLeftBlackReading = front_left_black;
     FrontRightBlackReading = front_right_black;
+    RearRightWhiteReading = 0;
+    RearLeftWhiteReading = 0;
+    RearRightBlackReading = 0;
+    RearLeftBlackReading = 0;
 
     FrontLeftThreshold = (front_left_white + front_left_black) / 2;
     FrontRightThreshold = (front_right_white + front_right_black) / 2;
+    RearRightThreshold = 0;
+    RearLeftThreshold = 0;
+    ThresholdLineSensorCount = 2;
     LineTrackingThresholdsConfigured = true;
 
     if (DebugEnabled)
@@ -266,6 +306,41 @@ void Drivetrain::SetLineTrackingThresholds(int front_left_white,
         std::cout << "[DRIVETRAIN][DEBUG] SetLineTrackingThresholds fl="
                   << FrontLeftThreshold << " fr=" << FrontRightThreshold
                   << std::endl;
+    }
+}
+
+void Drivetrain::SetLineTrackingThresholds(int front_left_white,
+                                           int front_right_white,
+                                           int rear_right_white,
+                                           int rear_left_white,
+                                           int front_left_black,
+                                           int front_right_black,
+                                           int rear_right_black,
+                                           int rear_left_black)
+{
+    FrontLeftWhiteReading = front_left_white;
+    FrontRightWhiteReading = front_right_white;
+    RearRightWhiteReading = rear_right_white;
+    RearLeftWhiteReading = rear_left_white;
+
+    FrontLeftBlackReading = front_left_black;
+    FrontRightBlackReading = front_right_black;
+    RearRightBlackReading = rear_right_black;
+    RearLeftBlackReading = rear_left_black;
+
+    FrontLeftThreshold = (front_left_white + front_left_black) / 2;
+    FrontRightThreshold = (front_right_white + front_right_black) / 2;
+    RearRightThreshold = (rear_right_white + rear_right_black) / 2;
+    RearLeftThreshold = (rear_left_white + rear_left_black) / 2;
+    ThresholdLineSensorCount = 4;
+    LineTrackingThresholdsConfigured = true;
+
+    if (DebugEnabled)
+    {
+        std::cout << "[DRIVETRAIN][DEBUG] SetLineTrackingThresholds fl="
+                  << FrontLeftThreshold << " fr=" << FrontRightThreshold
+                  << " rr=" << RearRightThreshold << " rl="
+                  << RearLeftThreshold << std::endl;
     }
 }
 
@@ -635,7 +710,8 @@ bool Drivetrain::EnsureLineTrackingConfigured(const char *operation) const
     std::cout << "[WARNING] " << operation
               << " requires line tracking configuration. Call "
                  "ConfigureLineTrackingSensors(...) and "
-                 "SetLineTrackingThresholds(...) first."
+                 "SetLineTrackingThresholds(...) first with matching "
+                 "2-sensor or 4-sensor arguments."
               << std::endl;
     return false;
 }
@@ -650,18 +726,40 @@ void Drivetrain::RefreshPerformanceMultipliers()
 
 void Drivetrain::ReadLineSensorState(bool &on_line_fl, bool &on_line_fr) const
 {
+    ReadLineSensorStateBySide(on_line_fl, on_line_fr);
+}
+
+void Drivetrain::ReadLineSensorStateBySide(bool &on_line_left,
+                                           bool &on_line_right) const
+{
     if (!IsLineTrackingConfigured())
     {
-        on_line_fl = false;
-        on_line_fr = false;
+        on_line_left = false;
+        on_line_right = false;
         return;
     }
 
     const int fl_reading = analog(FrontLeftLineSensorPort);
     const int fr_reading = analog(FrontRightLineSensorPort);
 
-    on_line_fl = fl_reading > FrontLeftThreshold;
-    on_line_fr = fr_reading > FrontRightThreshold;
+    const bool on_line_fl = fl_reading > FrontLeftThreshold;
+    const bool on_line_fr = fr_reading > FrontRightThreshold;
+
+    if (!UsesFourLineSensors)
+    {
+        on_line_left = on_line_fl;
+        on_line_right = on_line_fr;
+        return;
+    }
+
+    const int rr_reading = analog(RearRightLineSensorPort);
+    const int rl_reading = analog(RearLeftLineSensorPort);
+
+    const bool on_line_rr = rr_reading > RearRightThreshold;
+    const bool on_line_rl = rl_reading > RearLeftThreshold;
+
+    on_line_left = on_line_fl || on_line_rl;
+    on_line_right = on_line_fr || on_line_rr;
 }
 
 void Drivetrain::SetAllMotorVelocitiesScaled(int speed)
