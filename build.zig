@@ -18,11 +18,11 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    lib.addIncludePath(b.path("include"));
-    lib.addIncludePath(kipr_include);
-    lib.addCSourceFiles(.{
+    lib.root_module.addIncludePath(b.path("include"));
+    lib.root_module.addIncludePath(kipr_include);
+    lib.root_module.addCSourceFiles(.{
         .root = b.path("src"),
-        .files = &.{ "Drivetrain.cpp" },
+        .files = &.{"Drivetrain.cpp"},
         .flags = &.{ "-std=c++17", "-Wall", "-Wextra" },
     });
 
