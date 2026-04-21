@@ -23,7 +23,7 @@ pub fn build(b: *std.Build) void {
     lib.root_module.addCSourceFiles(.{
         .root = b.path("src"),
         .files = &.{"Drivetrain.cpp"},
-        .flags = &.{ "-std=c++17", "-Wall", "-Wextra" },
+        .flags = &.{ "-std=c++26", "-Wall", "-Wextra" },
     });
 
     b.addNamedLazyPath("include", b.path("include"));
