@@ -134,12 +134,12 @@ Drivetrain::RotateController::RotateController(Drivetrain &parent)
 
 void Drivetrain::RotateController::Left(int ticks, int speed)
 {
-    Parent.MoveRotateTicks(ticks, -speed);
+    Parent.MoveRotateTicks(ticks, speed);
 }
 
 void Drivetrain::RotateController::Right(int ticks, int speed)
 {
-    Parent.MoveRotateTicks(ticks, speed);
+    Parent.MoveRotateTicks(ticks, -speed);
 }
 
 Drivetrain::DiagonalController::DiagonalController(Drivetrain &parent)
