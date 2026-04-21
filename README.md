@@ -30,9 +30,14 @@ Constructor:
 
 ```cpp
 Drivetrain(
-    int FL, int FR, int RL, int RR,
-    int FL_IR_PORT, int FR_IR_PORT
+    int FL, int FR, int RL, int RR
 )
+```
+
+Then configure line-tracking IR ports separately:
+
+```cpp
+drivetrain.ConfigureLineTrackingSensors(int FL_IR_PORT, int FR_IR_PORT);
 ```
 
 Port meaning:
@@ -41,6 +46,9 @@ Port meaning:
 - `FR`: front-right motor
 - `RL`: rear-left motor
 - `RR`: rear-right motor
+
+Line sensor meaning:
+
 - `FL_IR_PORT`: front-left line sensor analog port
 - `FR_IR_PORT`: front-right line sensor analog port
 
@@ -51,11 +59,12 @@ Port meaning:
 
 int main()
 {
-    Drivetrain drivetrain(0, 1, 2, 3, 0, 1);
+    Drivetrain drivetrain(0, 1, 2, 3);
 
     drivetrain.SetDebugEnabled(true);
 
     drivetrain.SetPerformance(1.0, 1.0, 1.0, 1.0);
+    drivetrain.ConfigureLineTrackingSensors(0, 1);
     drivetrain.SetLineTrackingThresholds(200, 200, 3600, 3600);
 
     drivetrain.DriveByEncoder.Forward(300, 800);
@@ -70,9 +79,10 @@ int main()
 
 ## Recommended Initialization Order
 
-1. Construct drivetrain with motor and sensor ports.
+1. Construct drivetrain with motor ports.
 2. Call `SetPerformance(...)` to tune per-motor multipliers.
-3. Call `SetLineTrackingThresholds(...)` before any line-based movement.
+3. Call `ConfigureLineTrackingSensors(...)`.
+4. Call `SetLineTrackingThresholds(...)` before any line-based movement.
 
 ## API Overview
 
@@ -81,9 +91,11 @@ Movement is grouped by domain for discoverability and future expansion.
 ### Configuration
 
 - `void SetPerformance(double FLP, double FRP, double RLP, double RRP)`
+- `void ConfigureLineTrackingSensors(int FL_IR_PORT, int FR_IR_PORT)`
 - `void SetLineTrackingThresholds(int FL_white, int FR_white, int FL_black, int FR_black)`
 - `void SetDebugEnabled(bool enabled)`
 - `bool IsDebugEnabled() const`
+- `bool IsLineTrackingConfigured() const`
 
 ### DriveByEncoder Group
 
@@ -157,6 +169,7 @@ Truthy values currently recognized:
 ## Practical Notes
 
 - Line threshold values are computed internally as midpoint between white and black readings.
+- Line-based movement methods require `ConfigureLineTrackingSensors(...)` and `SetLineTrackingThresholds(...)`; otherwise they print a warning and return.
 - Performance multipliers help compensate for uneven motors or drivetrain friction.
 - Some encoder-based primitives use one reference encoder for completion checks, so per-motor performance tuning is important for straightness.
 - Backward line tracking is available, but forward line tracking generally gives more stable results.

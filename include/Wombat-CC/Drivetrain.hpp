@@ -296,13 +296,23 @@ public:
      * @param front_right_motor_port Front-right motor port.
      * @param rear_left_motor_port Rear-left motor port.
      * @param rear_right_motor_port Rear-right motor port.
+     */
+    Drivetrain(int front_left_motor_port, int front_right_motor_port,
+               int rear_left_motor_port, int rear_right_motor_port);
+
+    /**
+     * @brief Configure analog ports used for line tracking.
      * @param front_left_line_sensor_port Front-left line sensor analog port.
      * @param front_right_line_sensor_port Front-right line sensor analog port.
      */
-    Drivetrain(int front_left_motor_port, int front_right_motor_port,
-               int rear_left_motor_port, int rear_right_motor_port,
-               int front_left_line_sensor_port,
-               int front_right_line_sensor_port);
+    void ConfigureLineTrackingSensors(int front_left_line_sensor_port,
+                                      int front_right_line_sensor_port);
+
+    /**
+     * @brief Query whether line tracking is fully configured.
+     * @return True when sensor ports and thresholds are configured.
+     */
+    bool IsLineTrackingConfigured() const;
 
     /**
      * @brief Enable or disable debug logging.
@@ -376,9 +386,9 @@ private:
     std::array<double, 4> PerformanceMultipliers;
 
     /** @brief Front-left line sensor analog port. */
-    const int FrontLeftLineSensorPort;
+    int FrontLeftLineSensorPort;
     /** @brief Front-right line sensor analog port. */
-    const int FrontRightLineSensorPort;
+    int FrontRightLineSensorPort;
     /** @brief Front-left line threshold. */
     int FrontLeftThreshold;
     /** @brief Front-right line threshold. */
@@ -391,6 +401,10 @@ private:
     int FrontLeftBlackReading;
     /** @brief Front-right calibrated black reading. */
     int FrontRightBlackReading;
+    /** @brief True once sensor ports are configured. */
+    bool LineSensorsConfigured;
+    /** @brief True once line thresholds are configured. */
+    bool LineTrackingThresholdsConfigured;
 
     /** @brief Runtime debug logging flag. */
     bool DebugEnabled;
@@ -487,6 +501,13 @@ private:
      * @param speed Speed argument.
      */
     void LogCommand(const char *command, int ticks, int speed) const;
+
+    /**
+     * @brief Check whether line tracking methods are available.
+     * @param operation Name of the attempted line-tracking operation.
+     * @return True when line tracking is fully configured.
+     */
+    bool EnsureLineTrackingConfigured(const char *operation) const;
 
     /** @brief Refresh cached performance multiplier array values. */
     void RefreshPerformanceMultipliers();

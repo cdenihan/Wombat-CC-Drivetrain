@@ -183,9 +183,7 @@ void Drivetrain::LineController::Center(int speed)
 }
 
 Drivetrain::Drivetrain(int front_left_motor_port, int front_right_motor_port,
-                       int rear_left_motor_port, int rear_right_motor_port,
-                       int front_left_line_sensor_port,
-                       int front_right_line_sensor_port)
+                       int rear_left_motor_port, int rear_right_motor_port)
     : FrontLeftMotorPort(front_left_motor_port),
       FrontRightMotorPort(front_right_motor_port),
       RearLeftMotorPort(rear_left_motor_port),
@@ -199,11 +197,12 @@ Drivetrain::Drivetrain(int front_left_motor_port, int front_right_motor_port,
       FrontLeftPerformance(1.00), FrontRightPerformance(1.00),
       RearLeftPerformance(1.00), RearRightPerformance(1.00),
       PerformanceMultipliers{1.00, 1.00, 1.00, 1.00},
-      FrontLeftLineSensorPort(front_left_line_sensor_port),
-      FrontRightLineSensorPort(front_right_line_sensor_port),
+      FrontLeftLineSensorPort(-1),
+      FrontRightLineSensorPort(-1),
       FrontLeftThreshold(0), FrontRightThreshold(0), FrontLeftWhiteReading(0),
       FrontRightWhiteReading(0), FrontLeftBlackReading(0),
       FrontRightBlackReading(0),
+      LineSensorsConfigured(false), LineTrackingThresholdsConfigured(false),
       DebugEnabled(IsDebugEnabledFromEnvironment()),
       DriveByEncoder(*this), DriveLineTracking(*this),
       StrafeByEncoder(*this), StrafeLineTracking(*this), Rotate(*this),
@@ -216,6 +215,26 @@ Drivetrain::Drivetrain(int front_left_motor_port, int front_right_motor_port,
     {
         LogDebug("Debug mode enabled via WOMBAT_CC_DEBUG.");
     }
+}
+
+void Drivetrain::ConfigureLineTrackingSensors(int front_left_line_sensor_port,
+                                              int front_right_line_sensor_port)
+{
+    FrontLeftLineSensorPort = front_left_line_sensor_port;
+    FrontRightLineSensorPort = front_right_line_sensor_port;
+    LineSensorsConfigured = true;
+
+    if (DebugEnabled)
+    {
+        std::cout << "[DRIVETRAIN][DEBUG] ConfigureLineTrackingSensors fl_port="
+                  << FrontLeftLineSensorPort << " fr_port="
+                  << FrontRightLineSensorPort << std::endl;
+    }
+}
+
+bool Drivetrain::IsLineTrackingConfigured() const
+{
+    return LineSensorsConfigured && LineTrackingThresholdsConfigured;
 }
 
 void Drivetrain::SetDebugEnabled(bool enabled)
@@ -240,6 +259,7 @@ void Drivetrain::SetLineTrackingThresholds(int front_left_white,
 
     FrontLeftThreshold = (front_left_white + front_left_black) / 2;
     FrontRightThreshold = (front_right_white + front_right_black) / 2;
+    LineTrackingThresholdsConfigured = true;
 
     if (DebugEnabled)
     {
@@ -286,6 +306,11 @@ void Drivetrain::MoveDriveTicks(int ticks, int speed)
 
 void Drivetrain::MoveDriveTicksLineTracking(int ticks, int speed)
 {
+    if (!EnsureLineTrackingConfigured("MoveDriveTicksLineTracking"))
+    {
+        return;
+    }
+
     LogCommand("MoveDriveTicksLineTracking", ticks, speed);
 
     ResetMotorPositionCounters();
@@ -326,6 +351,11 @@ void Drivetrain::MoveDriveTicksLineTracking(int ticks, int speed)
 
 void Drivetrain::MoveDriveUntilLine(int speed)
 {
+    if (!EnsureLineTrackingConfigured("MoveDriveUntilLine"))
+    {
+        return;
+    }
+
     LogCommand("MoveDriveUntilLine", speed);
     StepUntilLineIntersections(-speed, kDriveToLineStepTicks,
                                /*use_strafe_motion=*/false);
@@ -355,6 +385,11 @@ void Drivetrain::MoveStrafeTicks(int ticks, int speed)
 
 void Drivetrain::MoveStrafeTicksLineTracking(int ticks, int speed)
 {
+    if (!EnsureLineTrackingConfigured("MoveStrafeTicksLineTracking"))
+    {
+        return;
+    }
+
     LogCommand("MoveStrafeTicksLineTracking", ticks, speed);
 
     ResetMotorPositionCounters();
@@ -401,6 +436,11 @@ void Drivetrain::MoveStrafeTicksLineTracking(int ticks, int speed)
 
 void Drivetrain::MoveStrafeUntilLine(int speed)
 {
+    if (!EnsureLineTrackingConfigured("MoveStrafeUntilLine"))
+    {
+        return;
+    }
+
     LogCommand("MoveStrafeUntilLine", speed);
     StepUntilLineIntersections(speed, kStrafeToLineStepTicks,
                                /*use_strafe_motion=*/true);
@@ -408,6 +448,11 @@ void Drivetrain::MoveStrafeUntilLine(int speed)
 
 void Drivetrain::MoveStrafeUntilBothSensorsSeeLine(int speed)
 {
+    if (!EnsureLineTrackingConfigured("MoveStrafeUntilBothSensorsSeeLine"))
+    {
+        return;
+    }
+
     LogCommand("MoveStrafeUntilBothSensorsSeeLine", speed);
 
     bool fl_seen_black = false;
@@ -504,6 +549,11 @@ void Drivetrain::MoveRotateTicks(int ticks, int speed)
 
 void Drivetrain::MoveSquareWithLine(int speed)
 {
+    if (!EnsureLineTrackingConfigured("MoveSquareWithLine"))
+    {
+        return;
+    }
+
     LogCommand("MoveSquareWithLine", speed);
 
     bool on_line_fl = false;
@@ -522,6 +572,11 @@ void Drivetrain::MoveSquareWithLine(int speed)
 
 void Drivetrain::MoveCenterOnLine(int speed)
 {
+    if (!EnsureLineTrackingConfigured("MoveCenterOnLine"))
+    {
+        return;
+    }
+
     LogCommand("MoveCenterOnLine", speed);
 
     bool on_line_fl = false;
@@ -570,6 +625,21 @@ void Drivetrain::LogCommand(const char *command, int ticks, int speed) const
               << " speed=" << speed << std::endl;
 }
 
+bool Drivetrain::EnsureLineTrackingConfigured(const char *operation) const
+{
+    if (IsLineTrackingConfigured())
+    {
+        return true;
+    }
+
+    std::cout << "[WARNING] " << operation
+              << " requires line tracking configuration. Call "
+                 "ConfigureLineTrackingSensors(...) and "
+                 "SetLineTrackingThresholds(...) first."
+              << std::endl;
+    return false;
+}
+
 void Drivetrain::RefreshPerformanceMultipliers()
 {
     PerformanceMultipliers[0] = FrontLeftPerformance;
@@ -580,6 +650,13 @@ void Drivetrain::RefreshPerformanceMultipliers()
 
 void Drivetrain::ReadLineSensorState(bool &on_line_fl, bool &on_line_fr) const
 {
+    if (!IsLineTrackingConfigured())
+    {
+        on_line_fl = false;
+        on_line_fr = false;
+        return;
+    }
+
     const int fl_reading = analog(FrontLeftLineSensorPort);
     const int fr_reading = analog(FrontRightLineSensorPort);
 
@@ -642,6 +719,11 @@ void Drivetrain::ApplyLineTrackingCorrection(int speed, bool on_line_fl,
 void Drivetrain::StepUntilLineIntersections(int speed, int step_ticks,
                                             bool use_strafe_motion)
 {
+    if (!EnsureLineTrackingConfigured("StepUntilLineIntersections"))
+    {
+        return;
+    }
+
     int intersections = 0;
 
     while (intersections < kLineIntersectionsRequired)
