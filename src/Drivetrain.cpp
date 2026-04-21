@@ -447,28 +447,32 @@ void Drivetrain::MoveDiagonalTicks(int ticks, int speed)
 
     if (ticks > 0 && speed > 0)
     {
-        mav(FrontLeftMotorPort, static_cast<int>(speed * FrontLeftPerformance));
-        mav(RearRightMotorPort, static_cast<int>(speed * RearRightPerformance));
+        mav(FrontLeftMotorPort,
+            static_cast<int>(-speed * FrontLeftPerformance));
+        mav(RearRightMotorPort,
+            static_cast<int>(-speed * RearRightPerformance));
         active = {true, false, false, true};
     }
     else if (ticks > 0 && speed < 0)
     {
         mav(FrontRightMotorPort,
-            static_cast<int>(-speed * FrontRightPerformance));
-        mav(RearLeftMotorPort, static_cast<int>(-speed * RearLeftPerformance));
+            static_cast<int>(speed * FrontRightPerformance));
+        mav(RearLeftMotorPort, static_cast<int>(speed * RearLeftPerformance));
         active = {false, true, true, false};
     }
     else if (ticks < 0 && speed > 0)
     {
         mav(FrontRightMotorPort,
-            static_cast<int>(-speed * FrontRightPerformance));
-        mav(RearLeftMotorPort, static_cast<int>(-speed * RearLeftPerformance));
+            static_cast<int>(speed * FrontRightPerformance));
+        mav(RearLeftMotorPort, static_cast<int>(speed * RearLeftPerformance));
         active = {false, true, true, false};
     }
     else if (ticks < 0 && speed < 0)
     {
-        mav(FrontLeftMotorPort, static_cast<int>(speed * FrontLeftPerformance));
-        mav(RearRightMotorPort, static_cast<int>(speed * RearRightPerformance));
+        mav(FrontLeftMotorPort,
+            static_cast<int>(-speed * FrontLeftPerformance));
+        mav(RearRightMotorPort,
+            static_cast<int>(-speed * RearRightPerformance));
         active = {true, false, false, true};
     }
     else
